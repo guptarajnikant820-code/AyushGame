@@ -1,22 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>HTML</title>
-  
-  <!-- HTML -->
-  
-
-  <!-- Custom Styles -->
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Only Down - Joystick Edition</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <p>Nothing to see here...</p>
-  <!-- Project -->
-  <script src="main.js"></script>
+
+    <h1>ONLY DOWN</h1>
+    
+    <div id="ui-container">
+        <div>Depth: <span id="score-val">0</span>m</div>
+        <div>Best: <span id="high-val">0</span>m</div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        
+        <div id="overlay">
+            <h2 id="game-over-text">GAME OVER</h2>
+            <p id="summary-text">Descend as deep as possible without falling into the void!</p>
+            <button id="start-btn" class="btn">START GAME</button>
+            <div id="instructions">
+                PC: Use <strong>A / D</strong> or <strong>← / →</strong><br>
+                Mobile: Drag the <strong>Virtual Joystick</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Virtual Joystick Base Container -->
+    <div id="joystick-zone">
+        <div id="joystick-base">
+            <div id="joystick-stick"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
 </body>
 </html>
