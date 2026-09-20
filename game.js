@@ -13,6 +13,10 @@ const joystickBase = document.getElementById('joystick-base');
 const joystickStick = document.getElementById('joystick-stick');
 
 let gameActive = false;
+let rafId = null; // Keeps track of active animation frames to prevent duplicate loop stacking
+
+// Float variable prevents the score rounding lock on fast refresh screens
+let preciseScore = 0; 
 let score = 0;
 let highScore = localStorage.getItem('onlyDownHighScore') || 0;
 highVal.innerText = highScore;
@@ -36,9 +40,9 @@ let scrollSpeed = 1.5;
 let minGap = 80;
 let maxGap = 130;
 
-// Input system tracking values
+// Input tracking systems
 const keyboardInput = { left: false, right: false };
-let joystickInputX = 0; // Ranges between -1 (full left) and 1 (full right)
+let joystickInputX = 0; 
 
 // --- PC Keyboard Event Listeners ---
 window.addEventListener('keydown', (e) => {
@@ -54,14 +58,13 @@ window.addEventListener('keyup', (e) => {
 // --- Mobile Virtual Joystick Logic ---
 let joystickActive = false;
 let joystickStartX = 0;
-const maxJoystickDistance = 35; // Maximum pixel drag distance for the stick knob
+const maxJoystickDistance = 35; 
 
 joystickBase.addEventListener('touchstart', (e) => {
     e.preventDefault();
     joystickActive = true;
     const touch = e.touches[0];
     const rect = joystickBase.getBoundingClientRect();
-    // Center point anchor of base element
     joystickStartX = rect.left + rect.width / 2;
     handleJoystickMove(touch.clientX);
 });
@@ -76,31 +79,32 @@ window.addEventListener('touchend', () => {
     if (!joystickActive) return;
     joystickActive = false;
     joystickInputX = 0;
-    // Snap visual element back to resting center
     joystickStick.style.left = '50%';
     joystickStick.style.transform = 'translate(-50%, -50%)';
 });
 
 function handleJoystickMove(clientX) {
     let deltaX = clientX - joystickStartX;
-    
-    // Clamp structural vector boundaries
     if (deltaX > maxJoystickDistance) deltaX = maxJoystickDistance;
     if (deltaX < -maxJoystickDistance) deltaX = -maxJoystickDistance;
 
-    // Shift graphic display knob
     const baseWidth = joystickBase.clientWidth;
     const centerOffsetPercentage = 50 + (deltaX / baseWidth) * 100;
     joystickStick.style.left = `${centerOffsetPercentage}%`;
     joystickStick.style.transform = `translate(-50%, -50%)`;
 
-    // Map velocity calculation range scale between -1.0 and 1.0
     joystickInputX = deltaX / maxJoystickDistance;
 }
 
-// Start Game triggers
-startBtn.addEventListener('click', initGame);
-startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initGame(); });
+// Unified input trigger prevents structural double activation bug
+function handleStartTrigger(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    initGame();
+}
+
+startBtn.addEventListener('click', handleStartTrigger);
+startBtn.addEventListener('touchstart', handleStartTrigger, { passive: false });
 
 function createPlatform(yPosition) {
     const minWidth = 60;
@@ -125,8 +129,15 @@ function createPlatform(yPosition) {
 }
 
 function initGame() {
+    // Force stop old active frame loops completely before opening a new game context
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
+
     platforms = [];
     score = 0;
+    preciseScore = 0; // Reset precise float tracking counters
     scrollSpeed = 1.5;
     scoreVal.innerText = score;
     
@@ -152,11 +163,16 @@ function initGame() {
     overlay.style.display = 'none';
     gameActive = true;
     
-    requestAnimationFrame(gameLoop);
+    rafId = requestAnimationFrame(gameLoop);
 }
 
 function endGame() {
     gameActive = false;
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
+
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('onlyDownHighScore', highScore);
@@ -173,11 +189,10 @@ function gameLoop() {
     if (!gameActive) return;
     updatePhysics();
     renderGraphics();
-    requestAnimationFrame(gameLoop);
+    rafId = requestAnimationFrame(gameLoop);
 }
 
 function updatePhysics() {
-    // Merge PC & Mobile Joystick input weights dynamically
     if (joystickActive) {
         player.vx = joystickInputX * player.speed;
     } else {
@@ -195,9 +210,13 @@ function updatePhysics() {
     if (player.x - player.radius < 0) player.x = player.radius;
     if (player.x + player.radius > canvas.width) player.x = canvas.width - player.radius;
 
+    // Difficulty curve calculations
     scrollSpeed = 1.5 + (score / 150); 
     player.y -= scrollSpeed;
-    score += Math.floor(scrollSpeed * 0.1); 
+    
+    // Accumulate points continuously using decimals, then update visible score
+    preciseScore += (scrollSpeed * 0.05); 
+    score = Math.floor(preciseScore);
     scoreVal.innerText = score;
 
     platforms.forEach(plat => {
