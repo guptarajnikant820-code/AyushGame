@@ -60,22 +60,24 @@ let joystickActive = false;
 let joystickStartX = 0;
 const maxJoystickDistance = 35; 
 
+// ✅ FIXED: Correct touch point evaluation extracted explicitly out of event clusters
 joystickBase.addEventListener('touchstart', (e) => {
-    e.preventDefault();
+    e.preventDefault(); 
     joystickActive = true;
     const touch = e.touches[0];
     const rect = joystickBase.getBoundingClientRect();
     joystickStartX = rect.left + rect.width / 2;
     handleJoystickMove(touch.clientX);
-});
+}, { passive: false });
 
 window.addEventListener('touchmove', (e) => {
     if (!joystickActive) return;
+    e.preventDefault(); 
     const touch = e.touches[0];
     handleJoystickMove(touch.clientX);
 }, { passive: false });
 
-window.addEventListener('touchend', () => {
+window.addEventListener('touchend', (e) => {
     if (!joystickActive) return;
     joystickActive = false;
     joystickInputX = 0;
@@ -96,14 +98,8 @@ function handleJoystickMove(clientX) {
     joystickInputX = deltaX / maxJoystickDistance;
 }
 
-function handleStartTrigger(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    initGame();
-}
-
-startBtn.addEventListener('click', handleStartTrigger);
-startBtn.addEventListener('touchstart', handleStartTrigger, { passive: false });
+// Bind cleanly using standard listener structures
+startBtn.addEventListener('click', initGame);
 
 function createPlatform(yPosition) {
     const minWidth = 60;
@@ -289,11 +285,36 @@ const cancelReplyBtn = document.getElementById('cancel-reply-btn');
 
 let activeReplyToId = null;
 
-// Core Persistence Engine Logic
-let totalLikes = parseInt(localStorage.getItem('onlyDownTotalLikes')) || 142; 
+// Baseline setup variables
+let totalLikes = parseInt(localStorage.getItem('onlyDownTotalLikes'));
+if (isNaN(totalLikes)) {
+    totalLikes = 142; 
+}
 let playerHasLiked = localStorage.getItem('onlyDownPlayerHasLiked') === 'true';
 
-// Seed starting chats if storage engine is empty
+if (playerHasLiked) {
+    likeBtn.classList.add('liked');
+}
+likeCountSpan.innerText = totalLikes;
+
+function handleLikeToggle() {
+    if (!playerHasLiked) {
+        playerHasLiked = true;
+        totalLikes++;
+        likeBtn.classList.add('liked');
+        localStorage.setItem('onlyDownPlayerHasLiked', 'true');
+    } else {
+        playerHasLiked = false;
+        totalLikes--;
+        likeBtn.classList.remove('liked');
+        localStorage.removeItem('onlyDownPlayerHasLiked');
+    }
+    likeCountSpan.innerText = totalLikes;
+    localStorage.setItem('onlyDownTotalLikes', totalLikes);
+}
+
+likeBtn.addEventListener('click', handleLikeToggle);
+
 let defaultChats = [
     {
         id: "msg-default-1",
@@ -311,24 +332,3 @@ let defaultChats = [
     }
 ];
 
-let feedData = JSON.parse(localStorage.getItem('onlyDownFeedData')) || defaultChats;
-
-// Setup Likes Counter Display State
-if (playerHasLiked) {
-    likeBtn.classList.add('liked');
-}
-likeCountSpan.innerText = totalLikes;
-
-likeBtn.addEventListener('click', () => {
-    if (!playerHasLiked) {
-        playerHasLiked = true;
-        totalLikes++;
-        likeBtn.classList.add('liked');
-        localStorage.setItem('onlyDownPlayerHasLiked', 'true');
-    } else {
-        playerHasLiked = false;
-        totalLikes--;
-        likeBtn.classList.remove('liked');
-        localStorage.removeItem('onlyDownPlayerHasLiked');
-    }
-    likeCountSpan.innerText = totalLikes;
