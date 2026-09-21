@@ -35,7 +35,29 @@
             <div id="joystick-stick"></div>
         </div>
     </div>
-    <p>
+
+    <!-- Global Community Feedback Zone -->
+    <div id="community-zone">
+        <button id="like-btn" class="community-btn">❤️ Like Game (<span id="like-count">0</span>)</button>
+        
+        <div class="comments-section">
+            <h3>Global Live Feed</h3>
+            <div id="comments-container">
+                <div class="comment-bubble"><strong>RetroGamer99:</strong> My best is 450m! Bouncy platforms are tricky.</div>
+                <div class="comment-bubble"><strong>PixelSurfer:</strong> The virtual joystick feels super smooth on mobile.</div>
+            </div>
+            
+            <form id="comment-form">
+                <input type="text" id="username-input" placeholder="Your Name" required maxlength="15">
+                <div class="input-row">
+                    <input type="text" id="comment-input" placeholder="Add to the global feed..." required maxlength="80">
+                    <button type="submit" class="send-btn">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <p class="credits">
         By Ayush Bansal
     </p>
 

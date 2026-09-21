@@ -13,9 +13,8 @@ const joystickBase = document.getElementById('joystick-base');
 const joystickStick = document.getElementById('joystick-stick');
 
 let gameActive = false;
-let rafId = null; // Keeps track of active animation frames to prevent duplicate loop stacking
+let rafId = null; 
 
-// Float variable prevents the score rounding lock on fast refresh screens
 let preciseScore = 0; 
 let score = 0;
 let highScore = localStorage.getItem('onlyDownHighScore') || 0;
@@ -39,6 +38,7 @@ const platformHeight = 15;
 let scrollSpeed = 1.5;
 let minGap = 80;
 let maxGap = 130;
+let globalLowestY = 350; 
 
 // Input tracking systems
 const keyboardInput = { left: false, right: false };
@@ -96,7 +96,6 @@ function handleJoystickMove(clientX) {
     joystickInputX = deltaX / maxJoystickDistance;
 }
 
-// Unified input trigger prevents structural double activation bug
 function handleStartTrigger(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -129,7 +128,6 @@ function createPlatform(yPosition) {
 }
 
 function initGame() {
-    // Force stop old active frame loops completely before opening a new game context
     if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -137,7 +135,7 @@ function initGame() {
 
     platforms = [];
     score = 0;
-    preciseScore = 0; // Reset precise float tracking counters
+    preciseScore = 0; 
     scrollSpeed = 1.5;
     scoreVal.innerText = score;
     
@@ -149,10 +147,10 @@ function initGame() {
         type: 'normal'
     });
 
-    let currentY = 350;
-    while (currentY < canvas.height + 200) {
-        platforms.push(createPlatform(currentY));
-        currentY += Math.random() * (maxGap - minGap) + minGap;
+    globalLowestY = 350; 
+    while (globalLowestY < canvas.height + 200) {
+        platforms.push(createPlatform(globalLowestY));
+        globalLowestY += Math.random() * (maxGap - minGap) + minGap;
     }
 
     player.x = 200;
@@ -210,11 +208,10 @@ function updatePhysics() {
     if (player.x - player.radius < 0) player.x = player.radius;
     if (player.x + player.radius > canvas.width) player.x = canvas.width - player.radius;
 
-    // Difficulty curve calculations
     scrollSpeed = 1.5 + (score / 150); 
     player.y -= scrollSpeed;
+    globalLowestY -= scrollSpeed; 
     
-    // Accumulate points continuously using decimals, then update visible score
     preciseScore += (scrollSpeed * 0.05); 
     score = Math.floor(preciseScore);
     scoreVal.innerText = score;
@@ -232,8 +229,8 @@ function updatePhysics() {
         if (player.vy >= 0 &&
             player.x + player.radius - 4 > plat.x &&
             player.x - player.radius + 4 < plat.x + plat.width &&
-            player.y + player.radius >= plat.y &&
-            player.y - player.radius < plat.y + plat.height) {
+            (player.y + player.radius) >= plat.y &&
+            (player.y + player.radius - player.vy) <= plat.y + 6) { 
             
             player.y = plat.y - player.radius;
             if (plat.type === 'bouncy') {
@@ -246,10 +243,9 @@ function updatePhysics() {
 
     platforms = platforms.filter(plat => plat.y + plat.height > 0);
 
-    while (platforms.length < 10) {
-        let lowestY = platforms.reduce((max, p) => p.y > max ? p.y : max, canvas.height);
-        let nextY = lowestY + Math.random() * (maxGap - minGap) + minGap;
-        platforms.push(createPlatform(nextY));
+    while (globalLowestY < canvas.height + 200) {
+        globalLowestY += Math.random() * (maxGap - minGap) + minGap;
+        platforms.push(createPlatform(globalLowestY));
     }
 
     if (player.y - player.radius > canvas.height) endGame();
@@ -278,3 +274,55 @@ function renderGraphics() {
     ctx.closePath();
     ctx.shadowBlur = 0;
 }
+
+// --- Community System (Likes Counter & Feedback Box) ---
+const likeBtn = document.getElementById('like-btn');
+const likeCountSpan = document.getElementById('like-count');
+const commentForm = document.getElementById('comment-form');
+const usernameInput = document.getElementById('username-input');
+const commentInput = document.getElementById('comment-input');
+const commentsContainer = document.getElementById('comments-container');
+
+// Start from a solid engagement benchmark
+let simulatedGlobalLikes = 284;
+let playerHasLiked = localStorage.getItem('onlyDownLiked') === 'true';
+
+// If this user already liked it in a past session, adjust calculation display
+if (playerHasLiked) {
+    likeBtn.classList.add('liked');
+    likeCountSpan.innerText = simulatedGlobalLikes + 1;
+} else {
+    likeCountSpan.innerText = simulatedGlobalLikes;
+}
+
+likeBtn.addEventListener('click', () => {
+    if (!playerHasLiked) {
+        playerHasLiked = true;
+        likeBtn.classList.add('liked');
+        likeCountSpan.innerText = simulatedGlobalLikes + 1;
+        localStorage.setItem('onlyDownLiked', 'true');
+    } else {
+        playerHasLiked = false;
+        likeBtn.classList.remove('liked');
+        likeCountSpan.innerText = simulatedGlobalLikes;
+        localStorage.removeItem('onlyDownLiked');
+    }
+});
+
+commentForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const name = usernameInput.value.trim();
+    const text = commentInput.value.trim();
+    
+    if (!name || !text) return;
+    
+    const newBubble = document.createElement('div');
+    newBubble.className = 'comment-bubble';
+    newBubble.innerHTML = `<strong>${name}:</strong> ${text}`;
+    
+    commentsContainer.appendChild(newBubble);
+    commentInput.value = ''; 
+    
+    commentsContainer.scrollTop = commentsContainer.scrollHeight;
+});
