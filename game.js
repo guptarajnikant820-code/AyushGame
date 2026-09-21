@@ -275,7 +275,7 @@ function renderGraphics() {
     ctx.shadowBlur = 0;
 }
 
-// --- Community System (Likes Counter & Feedback Box) ---
+// --- Threaded Community System (Persistent Conversations & Saved Likes) ---
 const likeBtn = document.getElementById('like-btn');
 const likeCountSpan = document.getElementById('like-count');
 const commentForm = document.getElementById('comment-form');
@@ -283,46 +283,52 @@ const usernameInput = document.getElementById('username-input');
 const commentInput = document.getElementById('comment-input');
 const commentsContainer = document.getElementById('comments-container');
 
-// Start from a solid engagement benchmark
-let simulatedGlobalLikes = 284;
-let playerHasLiked = localStorage.getItem('onlyDownLiked') === 'true';
+const replyStatusBanner = document.getElementById('reply-status-banner');
+const replyTargetName = document.getElementById('reply-target-name');
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
 
-// If this user already liked it in a past session, adjust calculation display
+let activeReplyToId = null;
+
+// Core Persistence Engine Logic
+let totalLikes = parseInt(localStorage.getItem('onlyDownTotalLikes')) || 142; 
+let playerHasLiked = localStorage.getItem('onlyDownPlayerHasLiked') === 'true';
+
+// Seed starting chats if storage engine is empty
+let defaultChats = [
+    {
+        id: "msg-default-1",
+        author: "RetroGamer99",
+        text: "My best is 450m! Bouncy platforms are tricky.",
+        replies: [
+            { author: "SpeedRunner", text: "Try waiting until the last second to drop off!" }
+        ]
+    },
+    {
+        id: "msg-default-2",
+        author: "PixelSurfer",
+        text: "The virtual joystick feels super smooth on mobile.",
+        replies: []
+    }
+];
+
+let feedData = JSON.parse(localStorage.getItem('onlyDownFeedData')) || defaultChats;
+
+// Setup Likes Counter Display State
 if (playerHasLiked) {
     likeBtn.classList.add('liked');
-    likeCountSpan.innerText = simulatedGlobalLikes + 1;
-} else {
-    likeCountSpan.innerText = simulatedGlobalLikes;
 }
+likeCountSpan.innerText = totalLikes;
 
 likeBtn.addEventListener('click', () => {
     if (!playerHasLiked) {
         playerHasLiked = true;
+        totalLikes++;
         likeBtn.classList.add('liked');
-        likeCountSpan.innerText = simulatedGlobalLikes + 1;
-        localStorage.setItem('onlyDownLiked', 'true');
+        localStorage.setItem('onlyDownPlayerHasLiked', 'true');
     } else {
         playerHasLiked = false;
+        totalLikes--;
         likeBtn.classList.remove('liked');
-        likeCountSpan.innerText = simulatedGlobalLikes;
-        localStorage.removeItem('onlyDownLiked');
+        localStorage.removeItem('onlyDownPlayerHasLiked');
     }
-});
-
-commentForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const name = usernameInput.value.trim();
-    const text = commentInput.value.trim();
-    
-    if (!name || !text) return;
-    
-    const newBubble = document.createElement('div');
-    newBubble.className = 'comment-bubble';
-    newBubble.innerHTML = `<strong>${name}:</strong> ${text}`;
-    
-    commentsContainer.appendChild(newBubble);
-    commentInput.value = ''; 
-    
-    commentsContainer.scrollTop = commentsContainer.scrollHeight;
-});
+    likeCountSpan.innerText = totalLikes;

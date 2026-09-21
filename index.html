@@ -35,9 +35,6 @@
             <div id="joystick-stick"></div>
         </div>
     </div>
-    <p> By Ayush Bansal
-        <!--Tab to edit-->
-    </p>
 
     <!-- Global Community Feedback Zone -->
     <div id="community-zone">
@@ -45,9 +42,15 @@
         
         <div class="comments-section">
             <h3>Global Live Feed</h3>
+            
+            <!-- Reply Context Status Banner -->
+            <div id="reply-status-banner" style="display: none;">
+                <span>Replying to <strong id="reply-target-name">User</strong></span>
+                <button type="button" id="cancel-reply-btn">❌ Cancel</button>
+            </div>
+
             <div id="comments-container">
-                <div class="comment-bubble"><strong>RetroGamer99:</strong> My best is 450m! Bouncy platforms are tricky.</div>
-                <div class="comment-bubble"><strong>PixelSurfer:</strong> The virtual joystick feels super smooth on mobile.</div>
+                <!-- Threaded comments and replies dynamically injected here -->
             </div>
             
             <form id="comment-form">
